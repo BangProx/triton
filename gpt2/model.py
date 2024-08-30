@@ -65,11 +65,11 @@ class CausalSelfAttention(nn.Module):
         mask = self.bias[:,:,:T,:T] == 0
         att = att.masked_fill(mask, float('-inf'))
         #print(f"{att.shape=}")
-        att = F.softmax(att, dim=-1)
-        #print(f"{att.shape=}")
+        #att = F.softmax(att, dim=-1)
+        att = mt.softmax(att)
+        #print(f"{att.shape=}") # att.shape=torch.Size([1, 12, 4, 4])
         #print("====\n\n")
-        
-        #att = mt.softmax(att)
+                
         att = self.attn_dropout(att)
         y = att @ v # (B, nh, T, T) x (B, nh, T, hs) -> (B, nh, T, hs)
         y = y.transpose(1, 2).contiguous().view(B, T, C) # re-assemble all head outputs side by side
@@ -276,7 +276,8 @@ class GPT(nn.Module):
                 v, _ = torch.topk(logits, min(top_k, logits.size(-1)))
                 logits[logits < v[:, [-1]]] = -float('Inf')
             # apply softmax to convert logits to (normalized) probabilities
-            probs = F.softmax(logits, dim=-1)
+            #probs = F.softmax(logits, dim=-1)
+            probs = mt.softmax(logits)
             # sample from the distribution
             idx_next = torch.multinomial(probs, num_samples=1)
             # append sampled index to the running sequence and continue

@@ -14,7 +14,7 @@ import torch
 import torch.nn as nn
 from torch.nn import functional as F
 import myTriton as mt
-
+import myTriton2 as mt2
 class LayerNorm(nn.Module):
     """ LayerNorm but with an optional bias. PyTorch doesn't support simply bias=False """
 
@@ -66,7 +66,10 @@ class CausalSelfAttention(nn.Module):
         att = att.masked_fill(mask, float('-inf'))
         #print(f"{att.shape=}")
         #att = F.softmax(att, dim=-1)
-        att = mt.softmax(att)
+        # (B, nh, T, T)
+        # att = mt.softmax(att)
+        att = mt2.softmax(att)
+        
         #print(f"{att.shape=}") # att.shape=torch.Size([1, 12, 4, 4])
         #print("====\n\n")
                 
@@ -276,8 +279,9 @@ class GPT(nn.Module):
                 v, _ = torch.topk(logits, min(top_k, logits.size(-1)))
                 logits[logits < v[:, [-1]]] = -float('Inf')
             # apply softmax to convert logits to (normalized) probabilities
-            #probs = F.softmax(logits, dim=-1)
-            probs = mt.softmax(logits)
+            probs = F.softmax(logits, dim=-1)
+            #probs = mt.softmax(logits)
+            #probs = mt2.softmax(logits)
             # sample from the distribution
             idx_next = torch.multinomial(probs, num_samples=1)
             # append sampled index to the running sequence and continue
